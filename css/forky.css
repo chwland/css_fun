@@ -1,0 +1,109 @@
+@keyframes
+hole {
+  0%  { background-color: #BB3532; left:600px; top: 0px;}
+  100%   { background-color: #ffffff; left: 0px; top: 0px;}
+}
+@keyframes red {
+  from {  background-color: #333588;  }
+  to { background-color: #BB3532; }
+}
+
+@keyframes opacity {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes cut {
+  from {   border-bottom: 0px solid white;  border-left: 0px solid transparent;}
+  to {   border-bottom: 130px solid white;  border-left: 130px solid transparent;}
+}
+
+
+.chickenlips {
+  position: absolute;
+  top: 40%;
+  left: 40%;
+  transform: translate(-50%,-50%);
+}
+
+/*.ccontainer {
+  animation-name: minimize;
+  animation-delay: 4s;
+  animation-duration: 4s;
+}*/
+
+.cletter {
+  width: 710px;
+  height: 710px;
+  background: #333588;
+  position: absolute;
+  border-radius: 50% ;
+  top: -175px;
+  left: -175px;
+}
+
+.clettercut {
+  width: 710px;
+  height: 710px;
+  background: #ffffff;
+  position: absolute;
+  top: -175px;
+  left: 270px;
+}
+
+.cletterinset {
+  width: 360px;
+  height: 360px;
+  background: #ffffff;
+  position: absolute;
+  border-radius: 50% ;
+  transform: rotate(0deg);
+  top: 0px;
+  left: 0px;
+  animation-name: hole;
+  animation-duration: 3s;
+}
+
+.clipcontainer {
+  top: 27px;
+  left: 270px;
+  position: absolute;
+}
+
+.clipcontainerdown {
+  top: 333px;
+  left: 270px;
+  transform: scaleY(-1);
+  position: absolute;
+}
+
+.clip {
+  width: 280px;
+  height: 130px;
+  background: #333588;
+  position: absolute;
+}
+
+.clipdown {
+  animation-name: red;
+  animation-delay: 6s;
+  animation-duration: 3s;
+  animation-fill-mode: forwards;
+}
+
+.clip-trianglecut {
+  width: 0;
+  height: 0;
+  position: absolute;
+  left:150px;
+  border-bottom: 130px solid white;  border-left: 130px solid transparent;
+  animation-name: opacity;
+  animation-delay: 3s;
+  animation-duration: 3s;
+  animation-fill-mode: backwards;
+}
+
