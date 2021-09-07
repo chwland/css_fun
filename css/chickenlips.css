@@ -65,6 +65,7 @@ hole {
   top: 0px;
   left: 0px;
   animation-name: hole;
+  animation-delay: 3s;
   animation-duration: 3s;
 }
 
@@ -90,7 +91,7 @@ hole {
 
 .clipdown {
   animation-name: red;
-  animation-delay: 6s;
+  animation-delay: 9s;
   animation-duration: 3s;
   animation-fill-mode: forwards;
 }
@@ -102,7 +103,7 @@ hole {
   left:150px;
   border-bottom: 130px solid white;  border-left: 130px solid transparent;
   animation-name: opacity;
-  animation-delay: 3s;
+  animation-delay: 6s;
   animation-duration: 3s;
   animation-fill-mode: backwards;
 }
