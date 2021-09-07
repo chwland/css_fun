@@ -1,0 +1,58 @@
+@keyframes cut_lower {
+  from {   border-radius: 50% 50% 50% 50% / 0% 0% 100% 100%}
+  to {    border-top-width:4px; width:200px; height:250px; border-radius: 50% 50% 50% 50% / 45% 45% 55% 55% }
+}
+
+@keyframes cut_upper {
+  from {   border-radius: 50% 50% 50% 50% / 100% 100% 0% 0%}
+  to {   border-bottom-width:4px; top:-254px; width:200px; height:250px; border-radius: 50% 50% 50% 50% / 55% 55% 45% 45% }
+}
+
+
+.acht {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+}
+
+/*.ccontainer {
+  animation-name: minimize;
+  animation-delay: 4s;
+  animation-duration: 4s;
+}*/
+
+.lower {
+  border-radius: 50% 50% 50% 50% / 0% 0% 100% 100%;
+  border-style: solid;
+  border-width: 0px 4px 4px 4px;
+  border-color: darkgrey;
+  width: 280px;
+  height: 300px;
+  background: white;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  animation-name: cut_lower;
+  animation-delay: 2s;
+  animation-duration: 2s;
+  animation-fill-mode: forwards;
+}
+
+.upper {
+  border-radius: 50% 50% 50% 50% / 100% 100% 0% 0%;
+  border-style: solid;
+  border-width: 4px 4px 0px 4px;
+  border-color: darkgrey;
+  width: 280px;
+  height: 300px;
+  background: white;
+  position: absolute;
+  top: -300px;
+  left: 0px;
+  animation-name: cut_upper;
+  animation-delay: 2s;
+  animation-duration: 2s;
+  animation-fill-mode: forwards;
+}
+
