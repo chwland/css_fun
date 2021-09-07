@@ -1,11 +1,11 @@
 @keyframes cut_lower {
   from {   border-radius: 50% 50% 50% 50% / 0% 0% 100% 100%}
-  to {    border-top-width:8px; width:200px; height:250px; border-radius: 50% 50% 50% 50% / 48% 48% 52% 52% }
+  to {     border-top-width:8px; width:220px; height:250px; border-radius: 50% 50% 50% 50% / 48% 48% 52% 52% }
 }
 
 @keyframes cut_upper {
   from {   border-radius: 50% 50% 50% 50% / 100% 100% 0% 0%}
-  to {   border-bottom-width:8px; top:-258px; width:200px; height:250px; border-radius: 50% 50% 50% 50% / 52% 52% 48% 48% }
+  to {   left: 10px; border-bottom-width:8px; top:-258px; width:200px; height:250px; border-radius: 50% 50% 50% 50% / 52% 52% 48% 48% }
 }
 
 
