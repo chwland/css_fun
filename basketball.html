@@ -754,7 +754,6 @@ function buildStatsBody() {
   tbody.innerHTML = rows.join('');
 
   // Restore input values
-  const gid = activeGame.id;
   tbody.querySelectorAll('input').forEach(inp => {
     const sk  = `${gid}_${inp.dataset.pid}`;
     const val = (S.stats[sk] || {})[inp.dataset.key];
