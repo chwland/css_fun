@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Wallabies Basketball Stats</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange:     #F37021;
+      --orange-dk:  #C75A10;
+      --bg:         #0b0f1a;
+      --card:       #111827;
+      --card2:      #1a2235;
+      --border:     #263147;
+      --text:       #e2e8f0;
+      --dim:        #7a8a9e;
+      --green:      #22c55e;
+      --red:        #ef4444;
+      --amber:      #f59e0b;
+      --in:         #0d1421;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--card);
+      border-bottom: 2px solid var(--orange);
+      height: 52px;
+      padding: 0 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      gap: 0.5rem;
+    }
+    .logo {
+      font-weight: 800;
+      font-size: 1.05rem;
+      color: var(--orange);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .logo .team { color: var(--text); font-weight: 600; }
+    nav { display: flex; gap: 2px; flex-shrink: 0; }
+    nav button {
+      padding: 0.35rem 0.8rem;
+      border: none;
+      background: transparent;
+      color: var(--dim);
+      cursor: pointer;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      transition: all .15s;
+    }
+    nav button.active { background: var(--orange); color: #fff; }
+    nav button:hover:not(.active) { background: var(--card2); color: var(--text); }
+
+    /* ── Views ── */
+    .view { display: none; padding: 1rem; }
+    .view.active { display: block; }
+
+    /* ── Layout ── */
+    .games-layout {
+      display: grid;
+      grid-template-columns: 272px 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 700px) {
+      .games-layout { grid-template-columns: 1fr; }
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    /* ── Section head ── */
+    .sec-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+    .sec-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--dim);
+    }
+    .sec-sub {
+      font-size: 0.72rem;
+      color: var(--dim);
+      margin-top: 0.15rem;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.4rem 0.9rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .btn-sm { padding: 0.28rem 0.65rem; font-size: 0.75rem; }
+    .btn-primary { background: var(--orange); color: #fff; }
+    .btn-primary:hover { background: var(--orange-dk); }
+    .btn-ghost { background: var(--card2); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--orange); color: var(--orange); }
+    .btn-danger { background: transparent; color: var(--red); border: 1px solid transparent; }
+    .btn-danger:hover { background: rgba(239,68,68,.1); border-color: var(--red); }
+
+    /* ── Game list ── */
+    .game-item {
+      padding: 0.65rem 0.75rem;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      margin-bottom: 0.4rem;
+      transition: all .15s;
+    }
+    .game-item:hover { background: var(--card2); border-color: var(--border); }
+    .game-item.selected { background: var(--card2); border-color: var(--orange); }
+    .game-item-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.2rem;
+    }
+    .game-opp { font-weight: 700; font-size: 0.9rem; }
+    .game-meta { font-size: 0.7rem; color: var(--dim); display: flex; gap: 0.4rem; align-items: center; }
+    .result-tag {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.1rem 0.45rem;
+      border-radius: 4px;
+    }
+    .r-win  { background: rgba(34,197,94,.15);  color: var(--green); }
+    .r-loss { background: rgba(239,68,68,.15); color: var(--red); }
+    .r-none { background: var(--card); color: var(--dim); border: 1px solid var(--border); }
+    .loc-dot {
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+    }
+    .loc-home { background: var(--orange); }
+    .loc-away { background: var(--dim); }
+
+    /* ── Stats panel header ── */
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      gap: 0.75rem;
+    }
+    .panel-title { font-weight: 700; font-size: 1rem; }
+    .panel-score { color: var(--dim); font-weight: 400; font-size: 0.85rem; }
+    .panel-sub { font-size: 0.75rem; color: var(--dim); margin-top: 0.15rem; }
+    .panel-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
+
+    /* ── Stats table ── */
+    .table-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    table {
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      min-width: 1100px;
+      width: 100%;
+    }
+    thead th {
+      padding: 0.45rem 0.3rem;
+      text-align: center;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--dim);
+      border-bottom: 2px solid var(--border);
+      white-space: nowrap;
+      background: var(--card);
+    }
+    thead th.l { text-align: left; padding-left: 0.6rem; }
+    td {
+      padding: 0.25rem 0.2rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+    td.l { text-align: left; padding-left: 0.6rem; white-space: nowrap; }
+    tbody tr:hover td { background: rgba(243,112,33,.04); }
+    tr.totals td {
+      border-top: 2px solid var(--orange);
+      font-weight: 700;
+      color: var(--orange);
+      background: rgba(243,112,33,.06);
+    }
+
+    /* stat inputs */
+    .si {
+      width: 42px;
+      padding: 0.25rem 0.2rem;
+      background: var(--in);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      text-align: center;
+      font-size: 0.76rem;
+      transition: border-color .15s;
+    }
+    .si:focus { outline: none; border-color: var(--orange); background: #121c2e; }
+    .si.wide { width: 58px; }
+    .si::-webkit-inner-spin-button,
+    .si::-webkit-outer-spin-button { -webkit-appearance: none; }
+    .si[type=number] { -moz-appearance: textfield; }
+
+    /* calc cells */
+    .cv { color: var(--dim); font-size: 0.75rem; }
+    .cv.g { color: var(--green); }
+    .cv.a { color: var(--amber); }
+    .cv.r { color: var(--red); }
+
+    /* player # badge */
+    .num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 22px;
+      height: 22px;
+      padding: 0 4px;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 0.67rem;
+      font-weight: 800;
+      color: var(--orange);
+      margin-right: 0.4rem;
+    }
+
+    /* pm colors */
+    .pm-pos { color: var(--green); font-weight: 700; }
+    .pm-neg { color: var(--red); font-weight: 700; }
+
+    /* ── Roster ── */
+    .player-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 0.75rem;
+      border-radius: 8px;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      margin-bottom: 0.4rem;
+    }
+
+    /* ── Empty state ── */
+    .empty {
+      text-align: center;
+      padding: 2.5rem 1rem;
+      color: var(--dim);
+    }
+    .empty .icon { font-size: 2.5rem; margin-bottom: 0.6rem; }
+    .empty p { font-size: 0.85rem; line-height: 1.5; }
+
+    /* ── Modal ── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      padding: 1rem;
+    }
+    .overlay.hidden { display: none; }
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 400px;
+    }
+    .modal-title { font-weight: 700; font-size: 1.02rem; margin-bottom: 1.2rem; }
+    .fg { margin-bottom: 0.85rem; }
+    label {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--dim);
+      margin-bottom: 0.3rem;
+    }
+    .fi {
+      width: 100%;
+      padding: 0.5rem 0.7rem;
+      background: var(--in);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 0.88rem;
+    }
+    .fi:focus { outline: none; border-color: var(--orange); }
+    .fr { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .modal-foot { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.25rem; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 1.25rem;
+      right: 1.25rem;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--orange);
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      z-index: 300;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all .2s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--orange); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🦘 <span class="team">Wallabies</span>&nbsp;Stats</div>
+  <nav>
+    <button class="active" data-view="games">Spiele</button>
+    <button data-view="roster">Kader</button>
+    <button data-view="season">Saison</button>
+  </nav>
+</header>
+
+<!-- ══ SPIELE ══ -->
+<div class="view active" id="view-games">
+  <div class="games-layout">
+
+    <!-- Game list sidebar -->
+    <div>
+      <div class="card">
+        <div class="sec-head">
+          <div>
+            <div class="sec-title">Spiele</div>
+            <div class="sec-sub" id="game-count"></div>
+          </div>
+          <button class="btn btn-primary btn-sm" id="btn-add-game">+ Spiel</button>
+        </div>
+        <div id="game-list"></div>
+      </div>
+    </div>
+
+    <!-- Stats panel -->
+    <div>
+      <div class="card" id="stats-card">
+        <div class="empty" id="stats-empty">
+          <div class="icon">📊</div>
+          <p>Wähle ein Spiel aus<br>um die Stats anzuzeigen.</p>
+        </div>
+        <div id="stats-content" style="display:none">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title" id="ph-title"></div>
+              <div class="panel-sub"  id="ph-sub"></div>
+            </div>
+            <div class="panel-actions">
+              <button class="btn btn-ghost btn-sm" id="btn-edit-game">✏️</button>
+              <button class="btn btn-danger btn-sm" id="btn-del-game">🗑</button>
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th class="l" style="min-width:140px">Spieler</th>
+                  <th>MIN</th>
+                  <th title="Punkte (auto)">PTS</th>
+                  <th title="Rebounds (auto)">REB</th>
+                  <th>AST</th>
+                  <th>STL</th>
+                  <th>BLK</th>
+                  <th>FGM</th>
+                  <th>FGA</th>
+                  <th>FG%</th>
+                  <th>3PM</th>
+                  <th>3PA</th>
+                  <th>3P%</th>
+                  <th>FTM</th>
+                  <th>FTA</th>
+                  <th>FT%</th>
+                  <th>OREB</th>
+                  <th>DREB</th>
+                  <th>TOV</th>
+                  <th>PF</th>
+                  <th>+/−</th>
+                </tr>
+              </thead>
+              <tbody id="stats-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ KADER ══ -->
+<div class="view" id="view-roster">
+  <div class="card" style="max-width:480px">
+    <div class="sec-head">
+      <div>
+        <div class="sec-title">Kader</div>
+        <div class="sec-sub" id="roster-sub"></div>
+      </div>
+      <button class="btn btn-primary btn-sm" id="btn-add-player">+ Spieler</button>
+    </div>
+    <div id="player-list"></div>
+  </div>
+</div>
+
+<!-- ══ SAISON ══ -->
+<div class="view" id="view-season">
+  <div class="card">
+    <div class="sec-head">
+      <div>
+        <div class="sec-title">Saisondurchschnitt</div>
+        <div class="sec-sub" id="season-sub"></div>
+      </div>
+    </div>
+    <div class="table-scroll" id="season-wrap"></div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Spiel ══ -->
+<div class="overlay hidden" id="modal-game">
+  <div class="modal">
+    <div class="modal-title" id="mg-title">Spiel hinzufügen</div>
+    <div class="fg">
+      <label>Gegner</label>
+      <input class="fi" type="text" id="g-opp" placeholder="z.B. Lugano Tigers">
+    </div>
+    <div class="fr">
+      <div class="fg">
+        <label>Datum</label>
+        <input class="fi" type="date" id="g-date">
+      </div>
+      <div class="fg">
+        <label>Ort</label>
+        <select class="fi" id="g-loc">
+          <option value="home">Heim</option>
+          <option value="away">Auswärts</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg">
+        <label>Wallabies</label>
+        <input class="fi" type="number" id="g-us" placeholder="—" min="0">
+      </div>
+      <div class="fg">
+        <label>Gegner</label>
+        <input class="fi" type="number" id="g-them" placeholder="—" min="0">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="mg-cancel">Abbrechen</button>
+      <button class="btn btn-primary" id="mg-save">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Spieler ══ -->
+<div class="overlay hidden" id="modal-player">
+  <div class="modal">
+    <div class="modal-title">Spieler hinzufügen</div>
+    <div class="fr">
+      <div class="fg">
+        <label>Trikotnummer</label>
+        <input class="fi" type="text" id="p-num" placeholder="z.B. 7" maxlength="3">
+      </div>
+      <div class="fg">
+        <label>Name</label>
+        <input class="fi" type="text" id="p-name" placeholder="Vor- und Nachname">
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="mp-cancel">Abbrechen</button>
+      <button class="btn btn-primary" id="mp-save">Hinzufügen</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════
+const KEY = { players: 'wba_players', games: 'wba_games', stats: 'wba_stats' };
+const load = k => JSON.parse(localStorage.getItem(k) || (k === KEY.stats ? '{}' : '[]'));
+const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+const S = {
+  players: load(KEY.players),
+  games:   load(KEY.games),
+  stats:   load(KEY.stats),
+};
+
+let activeGame = null;
+let editGid    = null;
+
+function nextId(arr) {
+  return arr.length ? Math.max(...arr.map(x => x.id)) + 1 : 1;
+}
+
+// ══════════════════════════════════════════
+//  CALC
+// ══════════════════════════════════════════
+function calc(s) {
+  const fgm  = +s.fgm  || 0;
+  const fga  = +s.fga  || 0;
+  const t3m  = +s.t3m  || 0;
+  const t3a  = +s.t3a  || 0;
+  const ftm  = +s.ftm  || 0;
+  const fta  = +s.fta  || 0;
+  const oreb = +s.oreb || 0;
+  const dreb = +s.dreb || 0;
+  return {
+    pts:   (fgm - t3m) * 2 + t3m * 3 + ftm,
+    reb:   oreb + dreb,
+    fgPct: fga  > 0 ? fgm  / fga  * 100 : null,
+    t3Pct: t3a  > 0 ? t3m  / t3a  * 100 : null,
+    ftPct: fta  > 0 ? ftm  / fta  * 100 : null,
+  };
+}
+
+function pctSpan(val, lo, hi) {
+  if (val === null) return '<span class="cv">–</span>';
+  const cls = val >= hi ? 'g' : val >= lo ? 'a' : 'r';
+  return `<span class="cv ${cls}">${val.toFixed(1)}%</span>`;
+}
+
+// ══════════════════════════════════════════
+//  GAME LIST
+// ══════════════════════════════════════════
+function renderGameList() {
+  const el   = document.getElementById('game-list');
+  const cnt  = document.getElementById('game-count');
+  const list = [...S.games].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  cnt.textContent = `${S.games.length} Spiel${S.games.length !== 1 ? 'e' : ''}`;
+
+  if (!list.length) {
+    el.innerHTML = `<div class="empty" style="padding:1.5rem">
+      <div class="icon">🏀</div>
+      <p>Noch keine Spiele.<br>Füge dein erstes Spiel hinzu.</p>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = list.map(g => {
+    const sel = g.id === activeGame?.id ? ' selected' : '';
+    const hasScore = g.scoreUs != null && g.scoreThem != null;
+    let tag = `<span class="result-tag r-none">–</span>`;
+    if (hasScore) {
+      const win = +g.scoreUs > +g.scoreThem;
+      tag = `<span class="result-tag ${win ? 'r-win' : 'r-loss'}">${win ? 'S' : 'N'} ${g.scoreUs}:${g.scoreThem}</span>`;
+    }
+    const d = g.date ? new Date(g.date + 'T12:00').toLocaleDateString('de-CH', { day:'2-digit', month:'2-digit', year:'2-digit' }) : '';
+    return `<div class="game-item${sel}" onclick="selectGame(${g.id})">
+      <div class="game-item-top">
+        <span class="game-opp">${esc(g.opp)}</span>${tag}
+      </div>
+      <div class="game-meta">
+        <span class="loc-dot ${g.loc === 'home' ? 'loc-home' : 'loc-away'}"></span>
+        ${g.loc === 'home' ? 'Heim' : 'Auswärts'}${d ? ' · ' + d : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+//  STATS PANEL
+// ══════════════════════════════════════════
+function renderStatsPanel() {
+  const empty   = document.getElementById('stats-empty');
+  const content = document.getElementById('stats-content');
+
+  if (!activeGame) {
+    empty.style.display = '';
+    content.style.display = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+  content.style.display = '';
+
+  const g = activeGame;
+  const hasScore = g.scoreUs != null && g.scoreThem != null;
+  const score = hasScore ? ` · ${g.scoreUs} : ${g.scoreThem}` : '';
+  const d = g.date ? new Date(g.date + 'T12:00').toLocaleDateString('de-CH', { weekday:'short', day:'numeric', month:'long', year:'numeric' }) : '';
+
+  document.getElementById('ph-title').innerHTML =
+    `vs. ${esc(g.opp)}<span class="panel-score">${score}</span>`;
+  document.getElementById('ph-sub').textContent =
+    `${d}${d && g.loc ? ' · ' : ''}${g.loc === 'home' ? 'Heim' : g.loc === 'away' ? 'Auswärts' : ''}`;
+
+  document.getElementById('btn-edit-game').onclick = () => openEditGame(g.id);
+  document.getElementById('btn-del-game').onclick  = () => deleteGame(g.id);
+
+  if (!S.players.length) {
+    document.getElementById('stats-body').innerHTML = `
+      <tr><td colspan="21" class="empty" style="padding:1.5rem">
+        <div class="icon">👥</div>
+        <p>Füge zuerst Spieler zum Kader hinzu.</p>
+      </td></tr>`;
+    return;
+  }
+
+  buildStatsBody();
+}
+
+// The editable fields in DOM order (after name, PTS, REB cols which are calc)
+// Col order: MIN | PTS* | REB* | AST | STL | BLK | FGM | FGA | FG%* | 3PM | 3PA | 3P%* | FTM | FTA | FT%* | OREB | DREB | TOV | PF | PM
+const INPUTS = ['min','ast','stl','blk','fgm','fga','t3m','t3a','ftm','fta','oreb','dreb','tov','pf','pm'];
+
+function inputCell(pid, key, wide, signed, placeholder) {
+  return `<td><input class="si${wide ? ' wide' : ''}" type="${key === 'min' ? 'text' : 'number'}"
+    data-pid="${pid}" data-key="${key}"
+    placeholder="${placeholder || '0'}"
+    ${signed ? '' : key !== 'min' ? 'min="0"' : ''}
+    oninput="onInput(this)"></td>`;
+}
+
+function calcCell(id, html) {
+  return `<td id="${id}">${html}</td>`;
+}
+
+function buildStatsBody() {
+  const tbody = document.getElementById('stats-body');
+  const gid   = activeGame.id;
+
+  // Accumulators for totals
+  let T = { fgm:0, fga:0, t3m:0, t3a:0, ftm:0, fta:0, oreb:0, dreb:0, ast:0, stl:0, blk:0, tov:0, pf:0, pm:0, pts:0, reb:0 };
+
+  const rows = S.players
+    .slice()
+    .sort((a, b) => (+a.num || 99) - (+b.num || 99))
+    .map(p => {
+      const sk = `${gid}_${p.id}`;
+      const s  = S.stats[sk] || {};
+      const c  = calc(s);
+
+      // Accumulate
+      T.fgm  += +s.fgm  || 0; T.fga  += +s.fga  || 0;
+      T.t3m  += +s.t3m  || 0; T.t3a  += +s.t3a  || 0;
+      T.ftm  += +s.ftm  || 0; T.fta  += +s.fta  || 0;
+      T.oreb += +s.oreb || 0; T.dreb += +s.dreb || 0;
+      T.ast  += +s.ast  || 0; T.stl  += +s.stl  || 0;
+      T.blk  += +s.blk  || 0; T.tov  += +s.tov  || 0;
+      T.pf   += +s.pf   || 0; T.pm   += +s.pm   || 0;
+      T.pts  += c.pts; T.reb += c.reb;
+
+      const pmVal = s.pm !== undefined && s.pm !== '' ? +s.pm : null;
+      const pmCls = pmVal > 0 ? 'pm-pos' : pmVal < 0 ? 'pm-neg' : '';
+
+      return `<tr>
+        <td class="l"><span class="num">${esc(p.num)}</span>${esc(p.name)}</td>
+        ${inputCell(p.id, 'min', true, false, '00:00')}
+        ${calcCell(`c_pts_${gid}_${p.id}`,  c.pts)}
+        ${calcCell(`c_reb_${gid}_${p.id}`,  c.reb)}
+        ${inputCell(p.id, 'ast',  false, false)}
+        ${inputCell(p.id, 'stl',  false, false)}
+        ${inputCell(p.id, 'blk',  false, false)}
+        ${inputCell(p.id, 'fgm',  false, false)}
+        ${inputCell(p.id, 'fga',  false, false)}
+        ${calcCell(`c_fgp_${gid}_${p.id}`,  pctSpan(c.fgPct, 40, 55))}
+        ${inputCell(p.id, 't3m',  false, false)}
+        ${inputCell(p.id, 't3a',  false, false)}
+        ${calcCell(`c_t3p_${gid}_${p.id}`,  pctSpan(c.t3Pct, 30, 40))}
+        ${inputCell(p.id, 'ftm',  false, false)}
+        ${inputCell(p.id, 'fta',  false, false)}
+        ${calcCell(`c_ftp_${gid}_${p.id}`,  pctSpan(c.ftPct, 60, 80))}
+        ${inputCell(p.id, 'oreb', false, false)}
+        ${inputCell(p.id, 'dreb', false, false)}
+        ${inputCell(p.id, 'tov',  false, false)}
+        ${inputCell(p.id, 'pf',   false, false)}
+        ${inputCell(p.id, 'pm',   false, true)}
+      </tr>`;
+    });
+
+  // Totals row
+  const tCalc = calc({ fgm: T.fgm, fga: T.fga, t3m: T.t3m, t3a: T.t3a, ftm: T.ftm, fta: T.fta, oreb: T.oreb, dreb: T.dreb });
+  const pmSign = T.pm >= 0 ? `+${T.pm}` : `${T.pm}`;
+  rows.push(`<tr class="totals" id="totals-row">
+    <td class="l">Team Total</td>
+    <td>–</td>
+    <td id="t_pts">${T.pts}</td>
+    <td id="t_reb">${T.reb}</td>
+    <td id="t_ast">${T.ast}</td>
+    <td id="t_stl">${T.stl}</td>
+    <td id="t_blk">${T.blk}</td>
+    <td id="t_fgm">${T.fgm}</td>
+    <td id="t_fga">${T.fga}</td>
+    <td id="t_fgp">${pctSpan(tCalc.fgPct, 40, 55)}</td>
+    <td id="t_t3m">${T.t3m}</td>
+    <td id="t_t3a">${T.t3a}</td>
+    <td id="t_t3p">${pctSpan(tCalc.t3Pct, 30, 40)}</td>
+    <td id="t_ftm">${T.ftm}</td>
+    <td id="t_fta">${T.fta}</td>
+    <td id="t_ftp">${pctSpan(tCalc.ftPct, 60, 80)}</td>
+    <td id="t_ore">${T.oreb}</td>
+    <td id="t_dre">${T.dreb}</td>
+    <td id="t_tov">${T.tov}</td>
+    <td id="t_pf">${T.pf}</td>
+    <td id="t_pm" class="${T.pm > 0 ? 'pm-pos' : T.pm < 0 ? 'pm-neg' : ''}">${pmSign}</td>
+  </tr>`);
+
+  tbody.innerHTML = rows.join('');
+
+  // Restore input values
+  const gid = activeGame.id;
+  tbody.querySelectorAll('input').forEach(inp => {
+    const sk  = `${gid}_${inp.dataset.pid}`;
+    const val = (S.stats[sk] || {})[inp.dataset.key];
+    if (val !== undefined) inp.value = val;
+  });
+}
+
+// ══════════════════════════════════════════
+//  STAT INPUT HANDLER
+// ══════════════════════════════════════════
+function onInput(inp) {
+  const pid = +inp.dataset.pid;
+  const key = inp.dataset.key;
+  const gid = activeGame.id;
+  const sk  = `${gid}_${pid}`;
+
+  if (!S.stats[sk]) S.stats[sk] = {};
+  S.stats[sk][key] = inp.value;
+  save(KEY.stats, S.stats);
+
+  const s = S.stats[sk];
+  const c = calc(s);
+
+  // Update calc cells for this player
+  const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+  set(`c_pts_${gid}_${pid}`, c.pts);
+  set(`c_reb_${gid}_${pid}`, c.reb);
+  set(`c_fgp_${gid}_${pid}`, pctSpan(c.fgPct, 40, 55));
+  set(`c_t3p_${gid}_${pid}`, pctSpan(c.t3Pct, 30, 40));
+  set(`c_ftp_${gid}_${pid}`, pctSpan(c.ftPct, 60, 80));
+
+  updateTotals();
+}
+
+function updateTotals() {
+  const gid = activeGame.id;
+  let T = { fgm:0, fga:0, t3m:0, t3a:0, ftm:0, fta:0, oreb:0, dreb:0, ast:0, stl:0, blk:0, tov:0, pf:0, pm:0, pts:0, reb:0 };
+
+  S.players.forEach(p => {
+    const s = S.stats[`${gid}_${p.id}`] || {};
+    const c = calc(s);
+    T.fgm  += +s.fgm  || 0; T.fga  += +s.fga  || 0;
+    T.t3m  += +s.t3m  || 0; T.t3a  += +s.t3a  || 0;
+    T.ftm  += +s.ftm  || 0; T.fta  += +s.fta  || 0;
+    T.oreb += +s.oreb || 0; T.dreb += +s.dreb || 0;
+    T.ast  += +s.ast  || 0; T.stl  += +s.stl  || 0;
+    T.blk  += +s.blk  || 0; T.tov  += +s.tov  || 0;
+    T.pf   += +s.pf   || 0; T.pm   += +s.pm   || 0;
+    T.pts  += c.pts;         T.reb  += c.reb;
+  });
+
+  const tc = calc({ fgm: T.fgm, fga: T.fga, t3m: T.t3m, t3a: T.t3a, ftm: T.ftm, fta: T.fta, oreb: T.oreb, dreb: T.dreb });
+  const pmStr = T.pm >= 0 ? `+${T.pm}` : `${T.pm}`;
+
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.innerHTML = v; };
+  set('t_pts', T.pts); set('t_reb', T.reb);
+  set('t_ast', T.ast); set('t_stl', T.stl); set('t_blk', T.blk);
+  set('t_fgm', T.fgm); set('t_fga', T.fga); set('t_fgp', pctSpan(tc.fgPct, 40, 55));
+  set('t_t3m', T.t3m); set('t_t3a', T.t3a); set('t_t3p', pctSpan(tc.t3Pct, 30, 40));
+  set('t_ftm', T.ftm); set('t_fta', T.fta); set('t_ftp', pctSpan(tc.ftPct, 60, 80));
+  set('t_ore', T.oreb); set('t_dre', T.dreb);
+  set('t_tov', T.tov); set('t_pf', T.pf);
+  const pmEl = document.getElementById('t_pm');
+  if (pmEl) {
+    pmEl.innerHTML = pmStr;
+    pmEl.className = T.pm > 0 ? 'pm-pos' : T.pm < 0 ? 'pm-neg' : '';
+  }
+}
+
+// ══════════════════════════════════════════
+//  GAME CRUD
+// ══════════════════════════════════════════
+function selectGame(id) {
+  activeGame = S.games.find(g => g.id === id) || null;
+  renderGameList();
+  renderStatsPanel();
+}
+
+function openAddGame() {
+  editGid = null;
+  document.getElementById('mg-title').textContent = 'Spiel hinzufügen';
+  document.getElementById('g-opp').value   = '';
+  document.getElementById('g-date').value  = new Date().toISOString().slice(0, 10);
+  document.getElementById('g-loc').value   = 'home';
+  document.getElementById('g-us').value    = '';
+  document.getElementById('g-them').value  = '';
+  document.getElementById('modal-game').classList.remove('hidden');
+  document.getElementById('g-opp').focus();
+}
+
+function openEditGame(id) {
+  const g = S.games.find(x => x.id === id);
+  if (!g) return;
+  editGid = id;
+  document.getElementById('mg-title').textContent = 'Spiel bearbeiten';
+  document.getElementById('g-opp').value   = g.opp;
+  document.getElementById('g-date').value  = g.date || '';
+  document.getElementById('g-loc').value   = g.loc  || 'home';
+  document.getElementById('g-us').value    = g.scoreUs   != null ? g.scoreUs   : '';
+  document.getElementById('g-them').value  = g.scoreThem != null ? g.scoreThem : '';
+  document.getElementById('modal-game').classList.remove('hidden');
+  document.getElementById('g-opp').focus();
+}
+
+function saveGame() {
+  const opp = document.getElementById('g-opp').value.trim();
+  if (!opp) { document.getElementById('g-opp').focus(); return; }
+  const us   = document.getElementById('g-us').value;
+  const them = document.getElementById('g-them').value;
+  const data = {
+    opp,
+    date:     document.getElementById('g-date').value,
+    loc:      document.getElementById('g-loc').value,
+    scoreUs:  us   !== '' ? +us   : null,
+    scoreThem: them !== '' ? +them : null,
+  };
+  if (editGid) {
+    const i = S.games.findIndex(x => x.id === editGid);
+    S.games[i] = { ...S.games[i], ...data };
+    activeGame = S.games[i];
+  } else {
+    data.id = nextId(S.games);
+    S.games.push(data);
+    activeGame = data;
+  }
+  save(KEY.games, S.games);
+  document.getElementById('modal-game').classList.add('hidden');
+  renderGameList();
+  renderStatsPanel();
+  showToast(editGid ? 'Spiel aktualisiert ✓' : 'Spiel hinzugefügt ✓');
+}
+
+function deleteGame(id) {
+  if (!confirm('Spiel und alle Stats löschen?')) return;
+  S.games = S.games.filter(g => g.id !== id);
+  Object.keys(S.stats).forEach(k => { if (k.startsWith(id + '_')) delete S.stats[k]; });
+  save(KEY.games, S.games); save(KEY.stats, S.stats);
+  activeGame = S.games.length ? S.games[S.games.length - 1] : null;
+  renderGameList(); renderStatsPanel();
+  showToast('Spiel gelöscht');
+}
+
+// ══════════════════════════════════════════
+//  PLAYER CRUD
+// ══════════════════════════════════════════
+function renderRoster() {
+  const el  = document.getElementById('player-list');
+  const sub = document.getElementById('roster-sub');
+  sub.textContent = `${S.players.length} Spieler im Kader`;
+
+  if (!S.players.length) {
+    el.innerHTML = `<div class="empty" style="padding:2rem">
+      <div class="icon">👥</div>
+      <p>Noch keine Spieler. Füge Spieler zum Kader hinzu.</p>
+    </div>`;
+    return;
+  }
+  const sorted = [...S.players].sort((a, b) => (+a.num || 99) - (+b.num || 99));
+  el.innerHTML = sorted.map(p => `
+    <div class="player-row">
+      <div style="display:flex;align-items:center">
+        <span class="num">${esc(p.num)}</span> ${esc(p.name)}
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="deletePlayer(${p.id})">Entfernen</button>
+    </div>`).join('');
+}
+
+function openAddPlayer() {
+  document.getElementById('p-num').value  = '';
+  document.getElementById('p-name').value = '';
+  document.getElementById('modal-player').classList.remove('hidden');
+  document.getElementById('p-num').focus();
+}
+
+function savePlayer() {
+  const name = document.getElementById('p-name').value.trim();
+  if (!name) { document.getElementById('p-name').focus(); return; }
+  S.players.push({
+    id:   nextId(S.players),
+    num:  document.getElementById('p-num').value.trim() || '?',
+    name,
+  });
+  save(KEY.players, S.players);
+  document.getElementById('modal-player').classList.add('hidden');
+  renderRoster();
+  if (activeGame) renderStatsPanel();
+  showToast('Spieler hinzugefügt ✓');
+}
+
+function deletePlayer(id) {
+  if (!confirm('Spieler und alle zugehörigen Stats löschen?')) return;
+  S.players = S.players.filter(p => p.id !== id);
+  Object.keys(S.stats).forEach(k => { if (k.endsWith('_' + id)) delete S.stats[k]; });
+  save(KEY.players, S.players); save(KEY.stats, S.stats);
+  renderRoster();
+  if (activeGame) renderStatsPanel();
+  showToast('Spieler entfernt');
+}
+
+// ══════════════════════════════════════════
+//  SEASON AVERAGES
+// ══════════════════════════════════════════
+function renderSeason() {
+  const wrap = document.getElementById('season-wrap');
+  const sub  = document.getElementById('season-sub');
+  const gc   = S.games.length;
+  sub.textContent = `${gc} Spiel${gc !== 1 ? 'e' : ''} · Durchschnitt pro Spiel`;
+
+  if (!S.players.length || !gc) {
+    wrap.innerHTML = `<div class="empty"><div class="icon">📈</div><p>Noch keine Statistiken erfasst.</p></div>`;
+    return;
+  }
+
+  const rows = S.players.map(p => {
+    let T = { gp:0, ms:0, fgm:0, fga:0, t3m:0, t3a:0, ftm:0, fta:0, oreb:0, dreb:0, ast:0, stl:0, blk:0, tov:0, pf:0, pm:0, pts:0, reb:0 };
+    S.games.forEach(g => {
+      const s = S.stats[`${g.id}_${p.id}`];
+      if (!s) return;
+      const hasAny = Object.values(s).some(v => v !== '' && v != null);
+      if (!hasAny) return;
+      T.gp++;
+      if (s.min) {
+        const [mm, ss] = s.min.split(':').map(Number);
+        T.ms += (mm || 0) * 60 + (ss || 0);
+      }
+      const c = calc(s);
+      T.fgm  += +s.fgm  || 0; T.fga  += +s.fga  || 0;
+      T.t3m  += +s.t3m  || 0; T.t3a  += +s.t3a  || 0;
+      T.ftm  += +s.ftm  || 0; T.fta  += +s.fta  || 0;
+      T.oreb += +s.oreb || 0; T.dreb += +s.dreb || 0;
+      T.ast  += +s.ast  || 0; T.stl  += +s.stl  || 0;
+      T.blk  += +s.blk  || 0; T.tov  += +s.tov  || 0;
+      T.pf   += +s.pf   || 0; T.pm   += +s.pm   || 0;
+      T.pts  += c.pts; T.reb += c.reb;
+    });
+    return { p, T };
+  }).filter(d => d.T.gp > 0)
+    .sort((a, b) => (b.T.pts / b.T.gp) - (a.T.pts / a.T.gp));
+
+  if (!rows.length) {
+    wrap.innerHTML = `<div class="empty"><div class="icon">📈</div><p>Noch keine Statistiken erfasst.</p></div>`;
+    return;
+  }
+
+  const av = (T, k) => T.gp ? (T[k] / T.gp).toFixed(1) : '–';
+  const fmtMin = T => {
+    if (!T.gp) return '–';
+    const s = Math.round(T.ms / T.gp);
+    return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  };
+  const pctStr = (m, a) => a > 0 ? (m / a * 100).toFixed(1) + '%' : '–';
+
+  wrap.innerHTML = `<table>
+    <thead><tr>
+      <th class="l" style="min-width:130px">Spieler</th>
+      <th title="Spiele">GP</th>
+      <th title="Minuten/Spiel">MIN</th>
+      <th title="Punkte/Spiel">PTS</th>
+      <th title="Rebounds/Spiel">REB</th>
+      <th title="Assists/Spiel">AST</th>
+      <th title="Steals/Spiel">STL</th>
+      <th title="Blocks/Spiel">BLK</th>
+      <th>FG%</th>
+      <th>3P%</th>
+      <th>FT%</th>
+      <th title="Off. Rebounds">OREB</th>
+      <th title="Def. Rebounds">DREB</th>
+      <th title="Ballverluste">TOV</th>
+      <th title="Fouls">PF</th>
+      <th title="Plus/Minus gesamt">+/−</th>
+    </tr></thead>
+    <tbody>
+      ${rows.map(({ p, T }) => {
+        const pm = T.pm >= 0 ? `+${T.pm}` : `${T.pm}`;
+        return `<tr>
+          <td class="l"><span class="num">${esc(p.num)}</span>${esc(p.name)}</td>
+          <td>${T.gp}</td>
+          <td>${fmtMin(T)}</td>
+          <td><strong>${av(T, 'pts')}</strong></td>
+          <td>${av(T, 'reb')}</td>
+          <td>${av(T, 'ast')}</td>
+          <td>${av(T, 'stl')}</td>
+          <td>${av(T, 'blk')}</td>
+          <td>${pctStr(T.fgm, T.fga)}</td>
+          <td>${pctStr(T.t3m, T.t3a)}</td>
+          <td>${pctStr(T.ftm, T.fta)}</td>
+          <td>${av(T, 'oreb')}</td>
+          <td>${av(T, 'dreb')}</td>
+          <td>${av(T, 'tov')}</td>
+          <td>${av(T, 'pf')}</td>
+          <td class="${T.pm > 0 ? 'pm-pos' : T.pm < 0 ? 'pm-neg' : ''}">${pm}</td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ══════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+let toastTmr;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTmr);
+  toastTmr = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+// ══════════════════════════════════════════
+//  NAV
+// ══════════════════════════════════════════
+document.querySelectorAll('nav button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    btn.classList.add('active');
+    const id = 'view-' + btn.dataset.view;
+    document.getElementById(id).classList.add('active');
+    if (btn.dataset.view === 'roster') renderRoster();
+    if (btn.dataset.view === 'season') renderSeason();
+  });
+});
+
+// ══════════════════════════════════════════
+//  GAME MODAL EVENTS
+// ══════════════════════════════════════════
+document.getElementById('btn-add-game').onclick  = openAddGame;
+document.getElementById('mg-cancel').onclick     = () => document.getElementById('modal-game').classList.add('hidden');
+document.getElementById('mg-save').onclick       = saveGame;
+document.getElementById('g-opp').addEventListener('keydown', e => { if (e.key === 'Enter') saveGame(); });
+document.getElementById('modal-game').addEventListener('click', e => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden');
+});
+
+// ══════════════════════════════════════════
+//  PLAYER MODAL EVENTS
+// ══════════════════════════════════════════
+document.getElementById('btn-add-player').onclick = openAddPlayer;
+document.getElementById('mp-cancel').onclick      = () => document.getElementById('modal-player').classList.add('hidden');
+document.getElementById('mp-save').onclick        = savePlayer;
+document.getElementById('p-name').addEventListener('keydown', e => { if (e.key === 'Enter') savePlayer(); });
+document.getElementById('modal-player').addEventListener('click', e => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden');
+});
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+if (S.games.length) {
+  activeGame = S.games[S.games.length - 1];
+}
+renderGameList();
+renderStatsPanel();
+</script>
+</body>
+</html>
