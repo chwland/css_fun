@@ -262,9 +262,6 @@
       margin-right: 0.4rem;
     }
 
-    /* pm colors */
-    .pm-pos { color: var(--green); font-weight: 700; }
-    .pm-neg { color: var(--red); font-weight: 700; }
 
     /* ── Roster ── */
     .player-row {
@@ -428,7 +425,7 @@
                   <th>DREB</th>
                   <th>TOV</th>
                   <th>PF</th>
-                  <th>+/−</th>
+                  <th title="Efficiency: PTS+REB+AST+STL+BLK−(FGA−FGM)−(FTA−FTM)−TOV">EFF</th>
                 </tr>
               </thead>
               <tbody id="stats-body"></tbody>
@@ -562,12 +559,21 @@ function calc(s) {
   const fta  = +s.fta  || 0;
   const oreb = +s.oreb || 0;
   const dreb = +s.dreb || 0;
+  const ast  = +s.ast  || 0;
+  const stl  = +s.stl  || 0;
+  const blk  = +s.blk  || 0;
+  const tov  = +s.tov  || 0;
+  const pts  = (fgm - t3m) * 2 + t3m * 3 + ftm;
+  const reb  = oreb + dreb;
+  // EFF = PTS + REB + AST + STL + BLK − (FGA−FGM) − (FTA−FTM) − TOV
+  const eff  = pts + reb + ast + stl + blk - (fga - fgm) - (fta - ftm) - tov;
   return {
-    pts:   (fgm - t3m) * 2 + t3m * 3 + ftm,
-    reb:   oreb + dreb,
-    fgPct: fga  > 0 ? fgm  / fga  * 100 : null,
-    t3Pct: t3a  > 0 ? t3m  / t3a  * 100 : null,
-    ftPct: fta  > 0 ? ftm  / fta  * 100 : null,
+    pts,
+    reb,
+    eff,
+    fgPct: fga > 0 ? fgm / fga * 100 : null,
+    t3Pct: t3a > 0 ? t3m / t3a * 100 : null,
+    ftPct: fta > 0 ? ftm / fta * 100 : null,
   };
 }
 
@@ -575,6 +581,13 @@ function pctSpan(val, lo, hi) {
   if (val === null) return '<span class="cv">–</span>';
   const cls = val >= hi ? 'g' : val >= lo ? 'a' : 'r';
   return `<span class="cv ${cls}">${val.toFixed(1)}%</span>`;
+}
+
+function effSpan(val, decimal) {
+  const v = decimal ? +val : Math.round(val);
+  const cls = v >= 15 ? 'g' : v >= 8 ? 'a' : v < 0 ? 'r' : '';
+  const str = decimal ? (+val).toFixed(1) : v;
+  return `<span class="cv${cls ? ' ' + cls : ''}">${str}</span>`;
 }
 
 // ══════════════════════════════════════════
@@ -657,7 +670,7 @@ function renderStatsPanel() {
 
 // The editable fields in DOM order (after name, PTS, REB cols which are calc)
 // Col order: MIN | PTS* | REB* | AST | STL | BLK | FGM | FGA | FG%* | 3PM | 3PA | 3P%* | FTM | FTA | FT%* | OREB | DREB | TOV | PF | PM
-const INPUTS = ['min','ast','stl','blk','fgm','fga','t3m','t3a','ftm','fta','oreb','dreb','tov','pf','pm'];
+const INPUTS = ['min','ast','stl','blk','fgm','fga','t3m','t3a','ftm','fta','oreb','dreb','tov','pf'];
 
 function inputCell(pid, key, wide, signed, placeholder) {
   return `<td><input class="si${wide ? ' wide' : ''}" type="${key === 'min' ? 'text' : 'number'}"
@@ -676,7 +689,7 @@ function buildStatsBody() {
   const gid   = activeGame.id;
 
   // Accumulators for totals
-  let T = { fgm:0, fga:0, t3m:0, t3a:0, ftm:0, fta:0, oreb:0, dreb:0, ast:0, stl:0, blk:0, tov:0, pf:0, pm:0, pts:0, reb:0 };
+  let T = { fgm:0, fga:0, t3m:0, t3a:0, ftm:0, fta:0, oreb:0, dreb:0, ast:0, stl:0, blk:0, tov:0, pf:0, pts:0, reb:0, eff:0 };
 
   const rows = S.players
     .slice()
@@ -693,11 +706,8 @@ function buildStatsBody() {
       T.oreb += +s.oreb || 0; T.dreb += +s.dreb || 0;
       T.ast  += +s.ast  || 0; T.stl  += +s.stl  || 0;
       T.blk  += +s.blk  || 0; T.tov  += +s.tov  || 0;
-      T.pf   += +s.pf   || 0; T.pm   += +s.pm   || 0;
-      T.pts  += c.pts; T.reb += c.reb;
-
-      const pmVal = s.pm !== undefined && s.pm !== '' ? +s.pm : null;
-      const pmCls = pmVal > 0 ? 'pm-pos' : pmVal < 0 ? 'pm-neg' : '';
+      T.pf   += +s.pf   || 0;
+      T.pts  += c.pts; T.reb += c.reb; T.eff += c.eff;
 
       return `<tr>
         <td class="l"><span class="num">${esc(p.num)}</span>${esc(p.name)}</td>
@@ -720,13 +730,12 @@ function buildStatsBody() {
         ${inputCell(p.id, 'dreb', false, false)}
         ${inputCell(p.id, 'tov',  false, false)}
         ${inputCell(p.id, 'pf',   false, false)}
-        ${inputCell(p.id, 'pm',   false, true)}
+        ${calcCell(`c_eff_${gid}_${p.id}`, effSpan(c.eff))}
       </tr>`;
     });
 
   // Totals row
-  const tCalc = calc({ fgm: T.fgm, fga: T.fga, t3m: T.t3m, t3a: T.t3a, ftm: T.ftm, fta: T.fta, oreb: T.oreb, dreb: T.dreb });
-  const pmSign = T.pm >= 0 ? `+${T.pm}` : `${T.pm}`;
+  const tCalc = calc({ fgm: T.fgm, fga: T.fga, t3m: T.t3m, t3a: T.t3a, ftm: T.ftm, fta: T.fta, oreb: T.oreb, dreb: T.dreb, ast: T.ast, stl: T.stl, blk: T.blk, tov: T.tov });
   rows.push(`<tr class="totals" id="totals-row">
     <td class="l">Team Total</td>
     <td>–</td>
@@ -748,7 +757,7 @@ function buildStatsBody() {
     <td id="t_dre">${T.dreb}</td>
     <td id="t_tov">${T.tov}</td>
     <td id="t_pf">${T.pf}</td>
-    <td id="t_pm" class="${T.pm > 0 ? 'pm-pos' : T.pm < 0 ? 'pm-neg' : ''}">${pmSign}</td>
+    <td id="t_eff">${effSpan(T.eff)}</td>
   </tr>`);
 
   tbody.innerHTML = rows.join('');
@@ -781,6 +790,7 @@ function onInput(inp) {
   const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
   set(`c_pts_${gid}_${pid}`, c.pts);
   set(`c_reb_${gid}_${pid}`, c.reb);
+  set(`c_eff_${gid}_${pid}`, effSpan(c.eff));
   set(`c_fgp_${gid}_${pid}`, pctSpan(c.fgPct, 40, 55));
   set(`c_t3p_${gid}_${pid}`, pctSpan(c.t3Pct, 30, 40));
   set(`c_ftp_${gid}_${pid}`, pctSpan(c.ftPct, 60, 80));
@@ -790,7 +800,7 @@ function onInput(inp) {
 
 function updateTotals() {
   const gid = activeGame.id;
-  let T = { fgm:0, fga:0, t3m:0, t3a:0, ftm:0, fta:0, oreb:0, dreb:0, ast:0, stl:0, blk:0, tov:0, pf:0, pm:0, pts:0, reb:0 };
+  let T = { fgm:0, fga:0, t3m:0, t3a:0, ftm:0, fta:0, oreb:0, dreb:0, ast:0, stl:0, blk:0, tov:0, pf:0, pts:0, reb:0, eff:0 };
 
   S.players.forEach(p => {
     const s = S.stats[`${gid}_${p.id}`] || {};
@@ -801,12 +811,11 @@ function updateTotals() {
     T.oreb += +s.oreb || 0; T.dreb += +s.dreb || 0;
     T.ast  += +s.ast  || 0; T.stl  += +s.stl  || 0;
     T.blk  += +s.blk  || 0; T.tov  += +s.tov  || 0;
-    T.pf   += +s.pf   || 0; T.pm   += +s.pm   || 0;
-    T.pts  += c.pts;         T.reb  += c.reb;
+    T.pf   += +s.pf   || 0;
+    T.pts  += c.pts; T.reb += c.reb; T.eff += c.eff;
   });
 
-  const tc = calc({ fgm: T.fgm, fga: T.fga, t3m: T.t3m, t3a: T.t3a, ftm: T.ftm, fta: T.fta, oreb: T.oreb, dreb: T.dreb });
-  const pmStr = T.pm >= 0 ? `+${T.pm}` : `${T.pm}`;
+  const tc = calc({ fgm: T.fgm, fga: T.fga, t3m: T.t3m, t3a: T.t3a, ftm: T.ftm, fta: T.fta, oreb: T.oreb, dreb: T.dreb, ast: T.ast, stl: T.stl, blk: T.blk, tov: T.tov });
 
   const set = (id, v) => { const el = document.getElementById(id); if (el) el.innerHTML = v; };
   set('t_pts', T.pts); set('t_reb', T.reb);
@@ -816,11 +825,7 @@ function updateTotals() {
   set('t_ftm', T.ftm); set('t_fta', T.fta); set('t_ftp', pctSpan(tc.ftPct, 60, 80));
   set('t_ore', T.oreb); set('t_dre', T.dreb);
   set('t_tov', T.tov); set('t_pf', T.pf);
-  const pmEl = document.getElementById('t_pm');
-  if (pmEl) {
-    pmEl.innerHTML = pmStr;
-    pmEl.className = T.pm > 0 ? 'pm-pos' : T.pm < 0 ? 'pm-neg' : '';
-  }
+  set('t_eff', effSpan(T.eff));
 }
 
 // ══════════════════════════════════════════
@@ -968,7 +973,7 @@ function renderSeason() {
   }
 
   const rows = S.players.map(p => {
-    let T = { gp:0, ms:0, fgm:0, fga:0, t3m:0, t3a:0, ftm:0, fta:0, oreb:0, dreb:0, ast:0, stl:0, blk:0, tov:0, pf:0, pm:0, pts:0, reb:0 };
+    let T = { gp:0, ms:0, fgm:0, fga:0, t3m:0, t3a:0, ftm:0, fta:0, oreb:0, dreb:0, ast:0, stl:0, blk:0, tov:0, pf:0, pts:0, reb:0, eff:0 };
     S.games.forEach(g => {
       const s = S.stats[`${g.id}_${p.id}`];
       if (!s) return;
@@ -986,8 +991,8 @@ function renderSeason() {
       T.oreb += +s.oreb || 0; T.dreb += +s.dreb || 0;
       T.ast  += +s.ast  || 0; T.stl  += +s.stl  || 0;
       T.blk  += +s.blk  || 0; T.tov  += +s.tov  || 0;
-      T.pf   += +s.pf   || 0; T.pm   += +s.pm   || 0;
-      T.pts  += c.pts; T.reb += c.reb;
+      T.pf   += +s.pf   || 0;
+      T.pts  += c.pts; T.reb += c.reb; T.eff += c.eff;
     });
     return { p, T };
   }).filter(d => d.T.gp > 0)
@@ -1023,11 +1028,11 @@ function renderSeason() {
       <th title="Def. Rebounds">DREB</th>
       <th title="Ballverluste">TOV</th>
       <th title="Fouls">PF</th>
-      <th title="Plus/Minus gesamt">+/−</th>
+      <th title="Efficiency: PTS+REB+AST+STL+BLK−(FGA−FGM)−(FTA−FTM)−TOV">EFF</th>
     </tr></thead>
     <tbody>
       ${rows.map(({ p, T }) => {
-        const pm = T.pm >= 0 ? `+${T.pm}` : `${T.pm}`;
+        const avgEff = T.gp ? (T.eff / T.gp).toFixed(1) : '–';
         return `<tr>
           <td class="l"><span class="num">${esc(p.num)}</span>${esc(p.name)}</td>
           <td>${T.gp}</td>
@@ -1044,7 +1049,7 @@ function renderSeason() {
           <td>${av(T, 'dreb')}</td>
           <td>${av(T, 'tov')}</td>
           <td>${av(T, 'pf')}</td>
-          <td class="${T.pm > 0 ? 'pm-pos' : T.pm < 0 ? 'pm-neg' : ''}">${pm}</td>
+          <td>${effSpan(T.gp ? T.eff / T.gp : 0, true)}</td>
         </tr>`;
       }).join('')}
     </tbody>
