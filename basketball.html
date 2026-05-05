@@ -293,11 +293,8 @@
 <!-- MODAL: Spieler -->
 <div class="overlay hidden" id="modal-player">
   <div class="modal">
-    <div class="modal-title">Spieler hinzufügen</div>
-    <div class="fr">
-      <div class="fg"><label>Trikotnummer</label><input class="fi" type="text" id="p-num" placeholder="z.B. 7" maxlength="3"></div>
-      <div class="fg"><label>Name</label><input class="fi" type="text" id="p-name" placeholder="Name"></div>
-    </div>
+    <div class="modal-title" id="mp-title">Spieler hinzufügen</div>
+    <div class="fg"><label>Name</label><input class="fi" type="text" id="p-name" placeholder="Name"></div>
     <div class="modal-foot">
       <button class="btn btn-ghost" id="mp-cancel">Abbrechen</button>
       <button class="btn btn-primary" id="mp-save">Hinzufügen</button>
@@ -325,6 +322,7 @@ var FB = { db:null, col:null, doc:null, addDoc:null, setDoc:null, deleteDoc:null
 var S = { players:[], games:[], stats:{} };
 var activeGame = null;
 var editGid    = null;
+var editPid    = null;
 var saveTimers = {};
 var chartInstances = {};
 var PAL = ['#F37021','#3b82f6','#22c55e','#f59e0b','#ef4444','#a855f7','#06b6d4','#ec4899','#84cc16','#10b981','#8b5cf6'];
@@ -490,8 +488,7 @@ function buildStatsBody() {
     };
     var cv = function(id,html) { return '<td id="'+id+'">'+html+'</td>'; };
     return '<tr>'+
-      '<td class="l"><span class="num">'+esc(p.num)+'</span>'+
-      '<span class="pname" onclick="showProfile(\''+p.id+'\')">'+esc(p.name)+'</span></td>'+
+      '<td class="l"><span class="pname" onclick="showProfile(\''+p.id+'\')">'+esc(p.name)+'</span></td>'+
       iw('min',true,'00:00')+
       cv('c_pts_'+gid+'_'+p.id, c.pts)+
       cv('c_reb_'+gid+'_'+p.id, c.reb)+
@@ -671,7 +668,7 @@ function renderRoster() {
     var gp = T.gp||1;
     return '<div class="player-row">'+
       '<div style="display:flex;align-items:center;cursor:pointer" onclick="showProfile(\''+p.id+'\')">'+
-      '<span class="num">'+esc(p.num)+'</span><span style="font-weight:600">'+esc(p.name)+'</span></div>'+
+      '<span style="font-weight:600">'+esc(p.name)+'</span></div>'+
       (T.gp>0 ?
         '<div class="player-mini-stats">'+
         '<div class="pstat"><div class="pstat-val">'+T.gp+'</div><div class="pstat-lbl">GP</div></div>'+
@@ -679,7 +676,9 @@ function renderRoster() {
         '<div class="pstat"><div class="pstat-val">'+(T.reb/gp).toFixed(1)+'</div><div class="pstat-lbl">RPG</div></div>'+
         '<div class="pstat"><div class="pstat-val" style="color:'+(T.eff/gp>=10?'var(--green)':T.eff/gp>=5?'var(--amber)':'var(--dim)')+'">'+(T.eff/gp).toFixed(1)+'</div><div class="pstat-lbl">EFF</div></div>'+
         '</div>' : '')+
-      '<button class="btn btn-danger btn-sm" onclick="deletePlayer(\''+p.id+'\')">✕</button></div>';
+      '<div style="display:flex;gap:0.3rem">'+
+      '<button class="btn btn-ghost btn-sm" onclick="openEditPlayer(\''+p.id+'\')">✏️</button>'+
+      '<button class="btn btn-danger btn-sm" onclick="deletePlayer(\''+p.id+'\')">✕</button></div></div>';
   }).join('');
 }
 
@@ -697,19 +696,37 @@ function playerSeasonStats(pid) {
 }
 
 function openAddPlayer() {
-  document.getElementById('p-num').value  = '';
+  editPid = null;
+  document.getElementById('mp-title').textContent = 'Spieler hinzufügen';
+  document.getElementById('mp-save').textContent  = 'Hinzufügen';
   document.getElementById('p-name').value = '';
   document.getElementById('modal-player').classList.remove('hidden');
-  document.getElementById('p-num').focus();
+  document.getElementById('p-name').focus();
+}
+
+function openEditPlayer(id) {
+  var p = S.players.find(function(x){ return x.id===id; });
+  if (!p) return;
+  editPid = id;
+  document.getElementById('mp-title').textContent = 'Spieler bearbeiten';
+  document.getElementById('mp-save').textContent  = 'Speichern';
+  document.getElementById('p-name').value = p.name;
+  document.getElementById('modal-player').classList.remove('hidden');
+  document.getElementById('p-name').focus();
 }
 
 async function savePlayer() {
   var name = document.getElementById('p-name').value.trim();
   if (!name) { document.getElementById('p-name').focus(); return; }
   if (!FB.ready) { showToast('Datenbank noch nicht bereit'); return; }
-  await FB.addDoc(FB.col.players, {num: document.getElementById('p-num').value.trim()||'?', name: name});
+  if (editPid) {
+    await FB.setDoc(FB.doc(FB.db,'players',editPid), {name: name});
+    showToast('Spieler aktualisiert ✓');
+  } else {
+    await FB.addDoc(FB.col.players, {name: name});
+    showToast('Spieler hinzugefügt ✓');
+  }
   document.getElementById('modal-player').classList.add('hidden');
-  showToast('Spieler hinzugefügt ✓');
 }
 
 async function deletePlayer(id) {
@@ -743,7 +760,6 @@ function showProfile(pid) {
   function avg(v){ return (v/gp).toFixed(1); }
   document.getElementById('profile-content').innerHTML =
     '<div class="profile-head">'+
-    '<span class="num profile-num">'+esc(p.num)+'</span>'+
     '<div><div class="profile-name">'+esc(p.name)+'</div>'+
     '<div class="profile-sub">'+T.gp+' Spiele · Ø '+secToMin(T.ms/gp)+' MIN</div></div></div>'+
     '<div class="profile-avg-grid">'+
@@ -809,8 +825,7 @@ function renderSeason() {
     rows.map(function(d){
       var p=d.p, T=d.T;
       return '<tr>'+
-        '<td class="l"><span class="num">'+esc(p.num)+'</span>'+
-        '<span class="pname" onclick="showProfile(\''+p.id+'\')">'+esc(p.name)+'</span></td>'+
+        '<td class="l"><span class="pname" onclick="showProfile(\''+p.id+'\')">'+esc(p.name)+'</span></td>'+
         '<td>'+T.gp+'</td><td>'+secToMin(T.ms/T.gp)+'</td>'+
         '<td><strong>'+av(T,'pts')+'</strong></td><td>'+av(T,'reb')+'</td><td>'+av(T,'ast')+'</td>'+
         '<td>'+av(T,'stl')+'</td><td>'+av(T,'blk')+'</td>'+
@@ -1003,7 +1018,7 @@ async function seedData() {
     {min:'02:24',fgm:0,fga:0, t3m:0,t3a:1,ftm:0,fta:0,oreb:0,dreb:0, ast:0,stl:0,blk:0,tov:0,pf:1},
     {min:'03:02',fgm:0,fga:1, t3m:0,t3a:0,ftm:0,fta:0,oreb:1,dreb:0, ast:0,stl:0,blk:0,tov:1,pf:0},
   ];
-  var pRefs = await Promise.all(names.map(function(name){ return FB.addDoc(FB.col.players,{num:'?',name:name}); }));
+  var pRefs = await Promise.all(names.map(function(name){ return FB.addDoc(FB.col.players,{name:name}); }));
   var gRef  = await FB.addDoc(FB.col.games,{opp:'Lugano',cat:'Playoffs 2026 U16I',date:'2026-04-26',loc:'away',scoreUs:null,scoreThem:null});
   await Promise.all(statsRaw.map(function(s,i){
     return FB.setDoc(FB.doc(FB.db,'stats',gRef.id+'_'+pRefs[i].id), s);
@@ -1048,12 +1063,13 @@ function setupUI() {
 }
 
 // ── Expose globals for inline onclick handlers ──
-window.selectGame   = selectGame;
-window.openEditGame = openEditGame;
-window.deleteGame   = deleteGame;
-window.deletePlayer = deletePlayer;
-window.onInput      = onInput;
-window.showProfile  = showProfile;
+window.selectGame    = selectGame;
+window.openEditGame  = openEditGame;
+window.deleteGame    = deleteGame;
+window.openEditPlayer= openEditPlayer;
+window.deletePlayer  = deletePlayer;
+window.onInput       = onInput;
+window.showProfile   = showProfile;
 
 // Run synchronous setup immediately
 setupUI();
